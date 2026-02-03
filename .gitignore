@@ -1,0 +1,35 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Credentials directory (contains database passwords)
+credentials/
+!credentials/.gitignore
+
+# Docker volumes
+data/mysql/*
+!data/mysql/.gitkeep
+
+# Sites directory - Git clone your Laravel projects here
+# Each site should have its own .gitignore
+sites/*
+!sites/.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+*.temp

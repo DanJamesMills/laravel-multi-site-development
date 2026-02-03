@@ -1,0 +1,14 @@
+# Ignore everything in sites directory except this .gitignore
+# This allows you to git clone multiple Laravel projects into sites/
+
+# Keep only index.php for now
+!public/
+!public/index.php
+
+# Each Laravel project should have its own .gitignore
+# Git clone your Laravel projects directly into this directory:
+#   cd sites
+#   git clone <your-repo-url> myapp
+
+# Ignore credentials files created by setup script
+.env.credentials
