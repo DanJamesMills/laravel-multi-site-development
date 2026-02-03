@@ -641,14 +641,25 @@ create_aliases() {
         return 0
     fi
     
-    # Detect shell
-    if [ -n "$ZSH_VERSION" ]; then
-        SHELL_RC="$HOME/.zshrc"
-    elif [ -n "$BASH_VERSION" ]; then
-        SHELL_RC="$HOME/.bashrc"
-    else
-        SHELL_RC="$HOME/.bashrc"
-    fi
+    # Detect user's shell (check actual shell, not the script's shell)
+    USER_SHELL=$(basename "$SHELL")
+    
+    case "$USER_SHELL" in
+        zsh)
+            SHELL_RC="$HOME/.zshrc"
+            ;;
+        bash)
+            SHELL_RC="$HOME/.bashrc"
+            ;;
+        *)
+            # Default to .bashrc and also check for .zshrc
+            if [ -f "$HOME/.zshrc" ]; then
+                SHELL_RC="$HOME/.zshrc"
+            else
+                SHELL_RC="$HOME/.bashrc"
+            fi
+            ;;
+    esac
     
     # Check if aliases already exist
     if grep -q "# Laravel Multi-Site Aliases" "$SHELL_RC" 2>/dev/null; then
