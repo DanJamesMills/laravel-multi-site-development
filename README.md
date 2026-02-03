@@ -8,6 +8,41 @@
 
 A Docker-based development environment for running multiple Laravel applications simultaneously with different PHP versions. Perfect for agencies, freelancers, or developers working on multiple Laravel projects.
 
+## 📑 Table of Contents
+
+- [✨ Features](#-features)
+- [🚀 Quick Start](#-quick-start)
+  - [Prerequisites](#prerequisites)
+  - [Initial Setup](#initial-setup)
+  - [Adding Your First Site](#adding-your-first-site)
+  - [Accessing Your Sites](#accessing-your-sites)
+- [📁 Directory Structure](#-directory-structure)
+- [🛠️ Common Tasks](#️-common-tasks)
+  - [Add a New Site](#add-a-new-site)
+  - [List All Sites](#list-all-sites)
+  - [Clone an Existing Laravel Project](#clone-an-existing-laravel-project)
+  - [Remove a Site](#remove-a-site)
+  - [Run Artisan Commands](#run-artisan-commands)
+  - [Run Composer Commands](#run-composer-commands)
+  - [Access MySQL](#access-mysql)
+  - [Start/Stop Environment](#startstop-environment)
+  - [Shell Aliases](#shell-aliases)
+  - [Active Development Workflow](#active-development-workflow)
+- [🔧 Configuration](#-configuration)
+  - [Customise Nginx Virtual Hosts](#customise-nginx-virtual-hosts)
+  - [Environment Variables](#environment-variables)
+  - [PHP Configuration](#php-configuration)
+  - [Installing Additional PHP Extensions](#installing-additional-php-extensions)
+  - [Nginx Configuration](#nginx-configuration)
+- [🎯 Use Cases](#-use-cases)
+- [📊 Container Resources](#-container-resources)
+- [🔍 Monitoring & Health Checks](#-monitoring--health-checks)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [🔐 Security Notes](#-security-notes)
+- [📚 Additional Resources](#-additional-resources)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+
 ## ✨ Features
 
 - **Multiple PHP Versions**: Run PHP 8.1, 8.2, 8.3, and 8.4 simultaneously
@@ -505,7 +540,85 @@ Default resource limits per service:
 
 Adjust in `docker-compose.yml` under `deploy.resources`.
 
-## 🐛 Troubleshooting
+## � Monitoring & Health Checks
+
+All services include Docker health checks that monitor their status. Additionally, an HTTP health endpoint is available for external monitoring tools.
+
+### HTTP Health Endpoint
+
+The webserver exposes a health check endpoint at:
+
+```
+http://localhost/health
+```
+
+**Response:**
+```
+HTTP/1.1 200 OK
+Content-Type: text/plain
+
+healthy
+```
+
+This endpoint can be used with monitoring tools like:
+- **Uptime Kuma** - Self-hosted monitoring
+- **Prometheus** - Metrics collection
+- **Nagios/Icinga** - Infrastructure monitoring
+- **Grafana** - Dashboards and alerting
+- **AWS CloudWatch** - Cloud monitoring
+- **Datadog/New Relic** - APM solutions
+
+### Docker Health Check Status
+
+View the health status of all containers:
+
+```bash
+docker compose ps
+```
+
+Output shows health status:
+```
+NAME        STATUS
+webserver   Up 5 minutes (healthy)
+php84       Up 5 minutes (healthy)
+php83       Up 5 minutes (healthy)
+php82       Up 5 minutes (healthy)
+php81       Up 5 minutes (healthy)
+mysql       Up 5 minutes (healthy)
+redis       Up 5 minutes (healthy)
+```
+
+### Service-Specific Health Checks
+
+Each service has its own health check mechanism:
+
+| Service | Health Check Method | Interval | Timeout |
+|---------|-------------------|----------|---------|
+| Nginx | `curl http://localhost/health` | 30s | 5s |
+| PHP-FPM | `php-fpm -t` | 30s | 5s |
+| MySQL | `mysqladmin ping` | 10s | 5s |
+| Redis | `redis-cli ping` | 10s | 5s |
+
+### Monitoring Setup Example (Uptime Kuma)
+
+1. Install Uptime Kuma:
+   ```bash
+   docker run -d --restart=always -p 3001:3001 -v uptime-kuma:/app/data --name uptime-kuma louislam/uptime-kuma:1
+   ```
+
+2. Access Uptime Kuma at `http://localhost:3001`
+
+3. Add a new monitor:
+   - **Monitor Type:** HTTP(s)
+   - **Friendly Name:** Laravel Development Environment
+   - **URL:** `http://host.docker.internal/health`
+   - **Heartbeat Interval:** 60 seconds
+   - **Method:** GET
+   - **Expected Status Code:** 200
+
+**Note:** Use `host.docker.internal` when monitoring from another Docker container, or `localhost` when monitoring from the host machine.
+
+## �🐛 Troubleshooting
 
 ### Port 80 Already in Use
 
