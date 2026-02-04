@@ -19,6 +19,7 @@ services:
     volumes:
       - ./config/vhosts:/etc/nginx/conf.d:ro
       - ./sites:/var/www/sites:rw
+      - ./templates:/var/www/templates:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
       interval: 30s
