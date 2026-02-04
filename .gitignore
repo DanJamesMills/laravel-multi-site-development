@@ -3,9 +3,10 @@
 .env.*
 !.env.example
 
-# Credentials directory (contains database passwords)
-credentials/
+# Credentials directory - ignore env files but keep the directory structure
+credentials/*.env
 !credentials/.gitignore
+!credentials/.gitkeep
 
 # Docker volumes
 data/mysql/*

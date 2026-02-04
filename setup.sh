@@ -344,7 +344,6 @@ add_site() {
             create_database "$DB_NAME" "$DB_USER" "$DB_PASS"
             
             # Save credentials to credentials directory
-            mkdir -p credentials
             cat > "credentials/${SITE_NAME}.env" << EOF
 # Database Credentials for ${SITE_NAME}
 # Use these in your Laravel .env file
@@ -356,7 +355,12 @@ DB_DATABASE=${DB_NAME}
 DB_USERNAME=${DB_USER}
 DB_PASSWORD=${DB_PASS}
 EOF
-            print_success "Database credentials saved to: credentials/${SITE_NAME}.env"
+            if [ $? -eq 0 ]; then
+                chmod 644 "credentials/${SITE_NAME}.env" 2>/dev/null || true
+                print_success "Database credentials saved to: credentials/${SITE_NAME}.env"
+            else
+                print_error "Failed to save credentials file. Please check directory permissions."
+            fi
         else
             print_warning "MySQL container not running. Start it first with: docker compose up -d"
             print_info "You can create the database later by running this script again"
@@ -628,9 +632,9 @@ create_aliases() {
     print_info "This will add convenient shortcuts to your shell profile"
     echo ""
     echo "Available aliases:"
-    echo "  ${CYAN}php81${NC}, ${CYAN}php82${NC}, ${CYAN}php83${NC}, ${CYAN}php84${NC}  - Enter PHP containers"
-    echo "  ${CYAN}dclogs${NC}                    - View all container logs"
-    echo "  ${CYAN}dcrestart${NC}                 - Restart all containers"
+    echo -e "  ${CYAN}php81${NC}, ${CYAN}php82${NC}, ${CYAN}php83${NC}, ${CYAN}php84${NC}  - Enter PHP containers"
+    echo -e "  ${CYAN}dclogs${NC}                    - View all container logs"
+    echo -e "  ${CYAN}dcrestart${NC}                 - Restart all containers"
     echo ""
     
     read -p "Create these aliases? [Y/n]: " create_alias
