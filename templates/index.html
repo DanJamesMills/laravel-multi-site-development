@@ -4,162 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laravel Multi-Site Development Environment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .container {
-            text-align: center;
-            max-width: 800px;
-        }
-        
-        .logo {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
-        }
-        
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .tagline {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-            font-weight: 300;
-        }
-        
-        .info-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-top: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .info-box h2 {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-            color: #fff;
-        }
-        
-        .sites-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        
-        .site-card {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 1rem;
-            text-decoration: none;
-            color: #fff;
-            transition: transform 0.2s, background 0.2s;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .site-card:hover {
-            transform: translateY(-4px);
-            background: rgba(255, 255, 255, 0.25);
-        }
-        
-        .command {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 1rem;
-            border-radius: 8px;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 0.9rem;
-            margin: 1rem 0;
-            text-align: left;
-            border-left: 4px solid #4ade80;
-        }
-        
-        .footer {
-            margin-top: 3rem;
-            opacity: 0.7;
-            font-size: 0.9rem;
-        }
-        
-        .footer a {
-            color: #fff;
-            text-decoration: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-            transition: border-color 0.2s;
-        }
-        
-        .footer a:hover {
-            border-bottom-color: #fff;
-        }
-        
-        .status {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #4ade80;
-            border-radius: 50%;
-            margin-right: 8px;
-            animation: blink 2s ease-in-out infinite;
         }
         
         @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
+        
+        .logo-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-blink {
+            animation: blink 2s ease-in-out infinite;
+        }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">🚀</div>
-        <h1>Build Something Amazing</h1>
-        <p class="tagline">Your Laravel development environment is ready</p>
-        
-        <div class="info-box">
-            <h2><span class="status"></span>All Systems Operational</h2>
-            <p>No sites configured yet. Let's create your first Laravel application!</p>
-            
-            <div class="command">
-                $ ./setup.sh<br>
-                # Select option 1: Add new site
-            </div>
-            
-            <p style="margin-top: 1rem; font-size: 0.95rem; opacity: 0.9;">
-                This environment supports PHP 8.1, 8.2, 8.3, and 8.4<br>
-                MySQL 8.0 • Redis • Nginx • Full Laravel stack
-            </p>
+<body class="bg-[#0a0a0a] text-gray-100 min-h-screen flex items-center justify-center p-5">
+    <div class="max-w-4xl w-full">
+        <div class="text-center mb-8 sm:mb-12">
+            <div class="text-5xl sm:text-6xl mb-4 logo-pulse">🚀</div>
+            <h1 class="text-3xl sm:text-5xl font-bold mb-4 text-white">Build Something Amazing</h1>
+            <p class="text-lg sm:text-xl text-gray-400">Your Laravel development environment is ready</p>
         </div>
         
-        <div class="footer">
-            <p>
-                <a href="https://github.com/DanJamesMills/laravel-multi-site-development" target="_blank">Documentation</a> • 
-                <a href="http://localhost/health" target="_blank">Health Check</a>
-            </p>
-            <p style="margin-top: 0.5rem;">Laravel Multi-Site Development Environment</p>
+        <div class="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 sm:p-8 shadow-2xl">
+            <div class="flex items-center mb-6">
+                <span class="inline-block w-2 h-2 bg-[#F55247] rounded-full mr-3 status-blink"></span>
+                <h2 class="text-xl sm:text-2xl font-semibold text-white">All Systems Operational</h2>
+            </div>
+            
+            <p class="text-gray-300 mb-6">No sites configured yet. Let's create your first Laravel application!</p>
+            
+            <div class="bg-[#0a0a0a] border-l-4 border-[#F55247] rounded-lg p-5 mb-6">
+                <code class="font-mono text-sm text-gray-300">
+                    <span class="text-[#F55247]">$</span> ./setup.sh<br>
+                    <span class="text-gray-500"># Select option 1: Add new site</span>
+                </code>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-4 mt-6">
+                <div class="bg-[#0a0a0a] border border-gray-800 rounded-lg p-4">
+                    <div class="text-gray-500 text-sm mb-1">PHP Versions</div>
+                    <div class="text-gray-200 font-medium">8.1, 8.2, 8.3, 8.4</div>
+                </div>
+                <div class="bg-[#0a0a0a] border border-gray-800 rounded-lg p-4">
+                    <div class="text-gray-500 text-sm mb-1">Services</div>
+                    <div class="text-gray-200 font-medium">MySQL 8.0 • Redis • Nginx</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 text-center text-sm text-gray-400 space-y-2">
+            <div>
+                <a href="https://github.com/DanJamesMills/laravel-multi-site-development" target="_blank" class="text-gray-400 hover:text-white transition-colors">Documentation</a>
+                <span class="mx-2">•</span>
+                <a href="http://localhost/health" target="_blank" class="text-gray-400 hover:text-white transition-colors">Health Check</a>
+            </div>
+            <div class="text-gray-500">Laravel Multi-Site Development Environment</div>
         </div>
     </div>
 </body>

@@ -8,6 +8,13 @@ credentials/*.env
 !credentials/.gitignore
 !credentials/.gitkeep
 
+# Virtual host configurations - site-specific configs
+config/vhosts/*.conf
+!config/vhosts/*.template
+!config/vhosts/.gitignore
+!config/vhosts/000-healthcheck.conf
+!config/vhosts/default.conf.disabled
+
 # Docker volumes
 data/mysql/*
 !data/mysql/.gitkeep
