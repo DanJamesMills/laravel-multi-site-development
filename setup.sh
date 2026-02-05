@@ -304,43 +304,49 @@ add_site() {
     if [ "$install_choice" = "1" ]; then
         CREATE_LARAVEL=true
         
-        # Ask about starter kit
-        echo -e "\n${GREEN}Laravel Starter Kit${NC}"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "Choose a starter kit for your Laravel application:"
-        echo ""
-        echo "  1) Laravel only - No starter kit (blank Laravel)"
-        echo "  2) React - Authentication with React & Inertia (Breeze)"
-        echo "  3) Vue - Authentication with Vue & Inertia (Breeze)"
-        echo "  4) Livewire - Authentication with Livewire & Blade (Breeze)"
-        echo ""
-        echo "Learn more: https://laravel.com/docs/starter-kits"
-        echo ""
-        
-        read -p "Select option [1-4]: " starter_choice
-        
-        case $starter_choice in
-            1)
-                STARTER_KIT="none"
-                print_success "Will install Laravel without starter kit"
-                ;;
-            2)
-                STARTER_KIT="react"
-                print_success "Will install Laravel with React starter kit"
-                ;;
-            3)
-                STARTER_KIT="vue"
-                print_success "Will install Laravel with Vue starter kit"
-                ;;
-            4)
-                STARTER_KIT="livewire"
-                print_success "Will install Laravel with Livewire starter kit"
-                ;;
-            *)
-                STARTER_KIT="none"
-                print_warning "Invalid option. Installing Laravel without starter kit"
-                ;;
-        esac
+        # Only offer starter kits for PHP 8.4 (latest)
+        if [ "${PHP_VERSION}" = "84" ]; then
+            # Ask about starter kit
+            echo -e "\n${GREEN}Laravel Starter Kit${NC}"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Choose a starter kit for your Laravel application:"
+            echo ""
+            echo "  1) Laravel only - No starter kit (blank Laravel)"
+            echo "  2) React - Authentication with React & Inertia (Breeze)"
+            echo "  3) Vue - Authentication with Vue & Inertia (Breeze)"
+            echo "  4) Livewire - Authentication with Livewire & Blade (Breeze)"
+            echo ""
+            echo "Learn more: https://laravel.com/docs/starter-kits"
+            echo ""
+            
+            read -p "Select option [1-4]: " starter_choice
+            
+            case $starter_choice in
+                1)
+                    STARTER_KIT="none"
+                    print_success "Will install Laravel without starter kit"
+                    ;;
+                2)
+                    STARTER_KIT="react"
+                    print_success "Will install Laravel with React starter kit"
+                    ;;
+                3)
+                    STARTER_KIT="vue"
+                    print_success "Will install Laravel with Vue starter kit"
+                    ;;
+                4)
+                    STARTER_KIT="livewire"
+                    print_success "Will install Laravel with Livewire starter kit"
+                    ;;
+                *)
+                    STARTER_KIT="none"
+                    print_warning "Invalid option. Installing Laravel without starter kit"
+                    ;;
+            esac
+        else
+            print_info "Starter kits are only available with PHP 8.4 (latest)"
+            print_info "Will install Laravel without starter kit"
+        fi
     fi
     
     # Summary
@@ -426,9 +432,9 @@ EOF
                     docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && composer require laravel/breeze --dev"
                     docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && php artisan breeze:install ${STARTER_KIT}"
                     
-                    # Install and build frontend dependencies
+                    # Install and build frontend dependencies (use legacy-peer-deps for compatibility)
                     print_info "Installing and building frontend dependencies..."
-                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && npm install && npm run build"
+                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && npm install --legacy-peer-deps && npm run build"
                     ;;
             esac
             

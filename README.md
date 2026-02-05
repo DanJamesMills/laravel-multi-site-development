@@ -48,6 +48,7 @@ A Docker-based development environment for running multiple Laravel applications
 - **Multiple PHP Versions**: Run PHP 8.1, 8.2, 8.3, and 8.4 simultaneously
 - **Multi-Site Support**: Host unlimited Laravel applications in one environment
 - **Isolated Databases**: Each site can have its own MySQL database and user
+- **Laravel Starter Kits**: Automatically install React, Vue, or Livewire starter kits (PHP 8.4 only)
 - **Easy Site Management**: Interactive CLI tool to add, list, and remove sites
 - **Nginx Virtual Hosts**: Automatic nginx configuration per site
 - **Development Ready**: MySQL, Redis, and all PHP extensions pre-configured
@@ -91,6 +92,9 @@ Select option `1) Add new site` and follow the prompts:
 3. **PHP Version**: Choose PHP 8.1, 8.2, 8.3, or 8.4
 4. **Database**: Optionally create a database and user
 5. **Laravel**: Create new Laravel project or clone existing one
+6. **Starter Kit** (PHP 8.4 only): Choose React, Vue, Livewire, or blank Laravel
+
+> **Note:** Laravel Breeze starter kits (React, Vue, Livewire) are only available when using PHP 8.4 to ensure compatibility with the latest frontend tooling and dependencies.
 
 ### Example: Adding a Site
 
