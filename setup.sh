@@ -71,15 +71,16 @@ check_env_file() {
         print_info "Creating initial .env file..."
         create_initial_env
     else
-        # Validate UID/GID in existing .env
-        source .env
+        # Validate UID/GID in existing .env (don't source since UID is read-only)
+        ENV_UID=$(grep "^UID=" .env | cut -d'=' -f2)
+        ENV_GID=$(grep "^GID=" .env | cut -d'=' -f2)
         CURRENT_UID=$(id -u)
         CURRENT_GID=$(id -g)
         
-        if [ "$UID" != "$CURRENT_UID" ] || [ "$GID" != "$CURRENT_GID" ]; then
+        if [ "$ENV_UID" != "$CURRENT_UID" ] || [ "$ENV_GID" != "$CURRENT_GID" ]; then
             print_warning "UID/GID mismatch detected in .env file!"
             print_info "  Current user: UID=${CURRENT_UID}, GID=${CURRENT_GID}"
-            print_info "  In .env file: UID=${UID}, GID=${GID}"
+            print_info "  In .env file: UID=${ENV_UID}, GID=${ENV_GID}"
             echo ""
             read -p "Update .env with correct UID/GID? [Y/n]: " fix_ids
             fix_ids=${fix_ids:-Y}
