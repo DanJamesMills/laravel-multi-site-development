@@ -70,6 +70,28 @@ check_env_file() {
         print_warning ".env file not found"
         print_info "Creating initial .env file..."
         create_initial_env
+    else
+        # Validate UID/GID in existing .env
+        source .env
+        CURRENT_UID=$(id -u)
+        CURRENT_GID=$(id -g)
+        
+        if [ "$UID" != "$CURRENT_UID" ] || [ "$GID" != "$CURRENT_GID" ]; then
+            print_warning "UID/GID mismatch detected in .env file!"
+            print_info "  Current user: UID=${CURRENT_UID}, GID=${CURRENT_GID}"
+            print_info "  In .env file: UID=${UID}, GID=${GID}"
+            echo ""
+            read -p "Update .env with correct UID/GID? [Y/n]: " fix_ids
+            fix_ids=${fix_ids:-Y}
+            
+            if [[ $fix_ids =~ ^[Yy]$ ]]; then
+                sed -i.bak "s/^UID=.*/UID=${CURRENT_UID}/" .env
+                sed -i.bak "s/^GID=.*/GID=${CURRENT_GID}/" .env
+                rm -f .env.bak
+                print_success "Updated .env with correct UID/GID"
+                print_warning "Restart containers for changes to take effect: docker compose restart"
+            fi
+        fi
     fi
 }
 
@@ -78,6 +100,22 @@ create_initial_env() {
     USER_ID=$(id -u)
     GROUP_ID=$(id -g)
     MYSQL_ROOT_PASS=$(generate_password)
+    
+    # Explain UID/GID to the user
+    USERNAME=$(whoami)
+    echo ""
+    print_info "Setting up file permissions for Docker containers..."
+    echo ""
+    echo "Docker containers run as root by default, which creates files owned by root."
+    echo "To avoid permission issues, we configure containers to use YOUR user ID."
+    echo ""
+    print_info "Configuring Docker with your user permissions:"
+    print_info "  User: ${USERNAME}"
+    print_info "  UID: ${USER_ID} (User ID)"
+    print_info "  GID: ${GROUP_ID} (Primary Group ID)"
+    echo ""
+    echo "This ensures all files created by Docker belong to you, not root."
+    echo ""
     
     cat > .env << EOF
 # Docker User Configuration
@@ -441,9 +479,9 @@ EOF
             print_success "${STARTER_KIT^} starter kit installed successfully"
         fi
         
-        # Fix file permissions - set ownership to host user
+        # Fix file permissions - set ownership to current user on host
         print_info "Setting correct file permissions..."
-        docker compose run --rm php${PHP_VERSION} sh -c "chown -R ${UID:-1000}:${GID:-1000} /var/www/sites/${SITE_NAME}"
+        sudo chown -R $(id -u):$(id -g) "sites/${SITE_NAME}"
         
         # Ensure storage and cache directories are writable
         if [ -d "sites/${SITE_NAME}/storage" ]; then
@@ -698,7 +736,8 @@ remove_site() {
     # Remove site directory if requested
     if [[ $remove_dir =~ ^[Yy]$ ]]; then
         if [ -d "sites/${SITE_NAME}" ]; then
-            rm -rf "sites/${SITE_NAME}"
+            print_info "Removing site directory (may require sudo for root-owned files)..."
+            sudo rm -rf "sites/${SITE_NAME}"
             print_success "Removed site directory: sites/${SITE_NAME}/"
         fi
     else
@@ -836,34 +875,101 @@ EOF
 # Initialize environment
 init_environment() {
     print_header
-    echo -e "${CYAN}Initialize Development Environment${NC}\n"
+    echo -e "${CYAN}Initialize/Restart Development Environment${NC}\n"
     
     check_docker
-    check_env_file
     
-    # Check if MySQL volume exists
-    if docker volume ls | grep -q "laraveldevelopment_mysql_data"; then
-        print_warning "⚠️  WARNING: MySQL volume already exists!"
+    # Check if this is first time setup or a reset
+    FIRST_TIME_SETUP=false
+    if [ ! -f .env ]; then
+        FIRST_TIME_SETUP=true
+        print_info "First time setup detected"
         echo ""
-        print_error "Reinitializing will DELETE ALL DATABASES and their data!"
+    else
+        # THIS IS A FULL RESET - SHOW MASSIVE WARNING
+        echo -e "${RED}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║                                                               ║${NC}"
+        echo -e "${RED}║                    ⚠️  DANGER ZONE  ⚠️                        ║${NC}"
+        echo -e "${RED}║                                                               ║${NC}"
+        echo -e "${RED}║          THIS WILL COMPLETELY RESET YOUR ENVIRONMENT          ║${NC}"
+        echo -e "${RED}║                                                               ║${NC}"
+        echo -e "${RED}╚═══════════════════════════════════════════════════════════════╝${NC}"
         echo ""
-        echo "This includes:"
-        echo "  • All site databases"
-        echo "  • All MySQL users"
-        echo "  • All stored data"
+        echo -e "${YELLOW}This operation will:${NC}"
         echo ""
-        read -p "Type 'DELETE' (in capitals) to confirm: " confirm
+        echo -e "  ${RED}✗${NC} Delete ALL site directories in ./sites/"
+        echo -e "  ${RED}✗${NC} Remove ALL Nginx virtual host configurations"
+        echo -e "  ${RED}✗${NC} Delete ALL MySQL databases and users"
+        echo -e "  ${RED}✗${NC} Remove ALL Docker volumes and data"
+        echo -e "  ${RED}✗${NC} Stop and remove all containers"
+        echo ""
+        echo -e "${YELLOW}After reset:${NC}"
+        echo -e "  ${GREEN}✓${NC} Fresh MySQL instance with new root password"
+        echo -e "  ${GREEN}✓${NC} Clean environment ready for new sites"
+        echo ""
+        print_error "THIS CANNOT BE UNDONE!"
+        echo ""
+        read -p "Do you want to continue? [y/N]: " confirm_continue
         
-        if [ "$confirm" != "DELETE" ]; then
-            print_info "Initialization cancelled"
+        if [[ ! $confirm_continue =~ ^[Yy]$ ]]; then
+            print_info "Operation cancelled"
             return 0
         fi
         
-        print_info "Stopping containers and removing MySQL volume..."
+        echo ""
+        print_warning "Second confirmation required for safety"
+        read -p "Type 'RESET EVERYTHING' (exactly) to confirm: " confirm_reset
+        
+        if [ "$confirm_reset" != "RESET EVERYTHING" ]; then
+            print_info "Operation cancelled - confirmation text did not match"
+            return 0
+        fi
+        
+        echo ""
+        print_info "Beginning complete environment reset..."
+        echo ""
+        
+        # Stop all containers
+        print_info "Stopping Docker containers..."
         docker compose down
-        docker volume rm laraveldevelopment_mysql_data
-        print_success "MySQL volume removed"
+        print_success "Containers stopped"
+        
+        # Remove all site directories
+        if [ -d "sites" ] && [ "$(ls -A sites)" ]; then
+            print_info "Removing all site directories..."
+            if [ -w "sites" ]; then
+                rm -rf sites/*
+            else
+                sudo rm -rf sites/*
+            fi
+            print_success "Site directories removed"
+        fi
+        
+        # Remove all vhost configs (except template)
+        print_info "Removing Nginx configurations..."
+        rm -f config/vhosts/*.conf
+        print_success "Nginx configurations removed"
+        
+        # Remove MySQL volume
+        if docker volume ls | grep -q "laraveldevelopment_mysql_data"; then
+            print_info "Removing MySQL volume and all databases..."
+            docker volume rm laraveldevelopment_mysql_data
+            print_success "MySQL volume removed"
+        fi
+        
+        # Remove Redis volume
+        if docker volume ls | grep -q "laraveldevelopment_redis_data"; then
+            print_info "Removing Redis volume..."
+            docker volume rm laraveldevelopment_redis_data
+            print_success "Redis volume removed"
+        fi
+        
+        print_success "Environment completely reset!"
+        echo ""
     fi
+    
+    # Now do fresh initialization
+    check_env_file
     
     print_info "Building and starting containers..."
     docker compose up -d --build
@@ -871,16 +977,20 @@ init_environment() {
     print_success "Environment initialized!"
     echo ""
     
-    # Offer to create aliases
-    read -p "Would you like to create shell aliases for easier container access? [Y/n]: " setup_aliases
-    setup_aliases=${setup_aliases:-Y}
-    
-    if [[ $setup_aliases =~ ^[Yy]$ ]]; then
-        create_aliases
+    if [ "$FIRST_TIME_SETUP" = true ]; then
+        # Offer to create aliases
+        read -p "Would you like to create shell aliases for easier container access? [Y/n]: " setup_aliases
+        setup_aliases=${setup_aliases:-Y}
+        
+        if [[ $setup_aliases =~ ^[Yy]$ ]]; then
+            create_aliases
+        fi
+        
+        echo ""
+        echo "You can now add sites using: ./setup.sh"
+    else
+        print_success "Environment is ready for new sites"
     fi
-    
-    echo ""
-    echo "You can now add sites using: ./setup.sh"
 }
 
 # Main menu
