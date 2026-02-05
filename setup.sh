@@ -299,8 +299,48 @@ add_site() {
     read -p "Select option [1-2]: " install_choice
     
     CREATE_LARAVEL=false
+    STARTER_KIT="none"
+    
     if [ "$install_choice" = "1" ]; then
         CREATE_LARAVEL=true
+        
+        # Ask about starter kit
+        echo -e "\n${GREEN}Laravel Starter Kit${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Choose a starter kit for your Laravel application:"
+        echo ""
+        echo "  1) Laravel only - No starter kit (blank Laravel)"
+        echo "  2) React - Modern SPA with React, Inertia & shadcn/ui"
+        echo "  3) Vue - Modern SPA with Vue, Inertia & shadcn-vue"
+        echo "  4) Livewire - Dynamic frontend with Livewire & Flux UI"
+        echo ""
+        echo "Learn more: https://laravel.com/docs/starter-kits"
+        echo ""
+        
+        read -p "Select option [1-4]: " starter_choice
+        
+        case $starter_choice in
+            1)
+                STARTER_KIT="none"
+                print_success "Will install Laravel without starter kit"
+                ;;
+            2)
+                STARTER_KIT="react"
+                print_success "Will install Laravel with React starter kit"
+                ;;
+            3)
+                STARTER_KIT="vue"
+                print_success "Will install Laravel with Vue starter kit"
+                ;;
+            4)
+                STARTER_KIT="livewire"
+                print_success "Will install Laravel with Livewire starter kit"
+                ;;
+            *)
+                STARTER_KIT="none"
+                print_warning "Invalid option. Installing Laravel without starter kit"
+                ;;
+        esac
     fi
     
     # Summary
@@ -315,7 +355,11 @@ add_site() {
         echo "  DB Password:  ${DB_PASS}"
     fi
     if [ "$CREATE_LARAVEL" = true ]; then
-        echo "  Laravel:      Will create new project"
+        if [ "$STARTER_KIT" != "none" ]; then
+            echo "  Laravel:      New project with ${STARTER_KIT^} starter kit"
+        else
+            echo "  Laravel:      New project (no starter kit)"
+        fi
     else
         echo "  Laravel:      Manual setup"
     fi
@@ -370,7 +414,29 @@ EOF
     # Create Laravel project if requested
     if [ "$CREATE_LARAVEL" = true ]; then
         print_info "Creating new Laravel project..."
-        docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites && composer create-project laravel/laravel ${SITE_NAME}"
+        
+        # Create Laravel project with or without starter kit
+        if [ "$STARTER_KIT" = "none" ]; then
+            print_info "Installing Laravel (without starter kit)..."
+            docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites && composer create-project laravel/laravel ${SITE_NAME}"
+        else
+            print_info "Installing Laravel with ${STARTER_KIT^} starter kit..."
+            docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites && composer create-project laravel/laravel ${SITE_NAME} '--starter-kit=${STARTER_KIT}'"
+            
+            # Install and build frontend dependencies for starter kits
+            print_info "Installing and building frontend dependencies..."
+            docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && npm install && npm run build"
+        fi
+        
+        # Fix file permissions - set ownership to host user
+        print_info "Setting correct file permissions..."
+        docker compose run --rm php${PHP_VERSION} sh -c "chown -R ${UID:-1000}:${GID:-1000} /var/www/sites/${SITE_NAME}"
+        
+        # Ensure storage and cache directories are writable
+        if [ -d "sites/${SITE_NAME}/storage" ]; then
+            chmod -R 775 "sites/${SITE_NAME}/storage"
+            chmod -R 775 "sites/${SITE_NAME}/bootstrap/cache"
+        fi
         
         if [ -f "credentials/${SITE_NAME}.env" ]; then
             print_info "Updating Laravel .env file with database credentials..."
@@ -399,6 +465,10 @@ EOF
                 -e "s/{DOMAIN}/${DOMAIN}/g" \
                 "sites/${SITE_NAME}/public/index.php"
             rm -f "sites/${SITE_NAME}/public/index.php.bak"
+            
+            # Ensure proper permissions for manually cloned projects
+            chmod -R 755 "sites/${SITE_NAME}"
+            
             print_success "Created placeholder landing page with PHP diagnostics"
         else
             print_error "Template file not found: templates/placeholder.php"
@@ -518,6 +588,55 @@ list_sites() {
     done
     
     echo ""
+}
+
+# Fix permissions for a site
+fix_permissions() {
+    print_header
+    echo -e "${CYAN}Fix Site Permissions${NC}\n"
+    
+    list_sites
+    
+    read -p "Enter site name to fix permissions: " SITE_NAME
+    
+    if [ ! -d "sites/${SITE_NAME}" ]; then
+        print_error "Site directory not found: sites/${SITE_NAME}"
+        return
+    fi
+    
+    print_info "Fixing permissions for ${SITE_NAME}..."
+    
+    # Get UID and GID from .env or use defaults
+    if [ -f .env ]; then
+        source .env
+    fi
+    USER_ID=${UID:-$(id -u)}
+    GROUP_ID=${GID:-$(id -g)}
+    
+    # Fix ownership
+    print_info "Setting ownership to ${USER_ID}:${GROUP_ID}..."
+    sudo chown -R ${USER_ID}:${GROUP_ID} "sites/${SITE_NAME}"
+    
+    # Set directory permissions
+    print_info "Setting directory permissions..."
+    find "sites/${SITE_NAME}" -type d -exec chmod 755 {} \;
+    
+    # Set file permissions
+    print_info "Setting file permissions..."
+    find "sites/${SITE_NAME}" -type f -exec chmod 644 {} \;
+    
+    # Make storage and cache writable
+    if [ -d "sites/${SITE_NAME}/storage" ]; then
+        print_info "Making storage directories writable..."
+        chmod -R 775 "sites/${SITE_NAME}/storage"
+    fi
+    
+    if [ -d "sites/${SITE_NAME}/bootstrap/cache" ]; then
+        chmod -R 775 "sites/${SITE_NAME}/bootstrap/cache"
+    fi
+    
+    print_success "Permissions fixed for ${SITE_NAME}!"
+    print_info "The site should now be accessible without permission errors."
 }
 
 # Remove site
@@ -759,12 +878,13 @@ show_menu() {
     echo "  1) Add new site"
     echo "  2) List sites"
     echo "  3) Remove site"
-    echo "  4) Initialize/Restart environment"
-    echo "  5) Create shell aliases"
-    echo "  6) Exit"
+    echo "  4) Fix site permissions"
+    echo "  5) Initialize/Restart environment"
+    echo "  6) Create shell aliases"
+    echo "  7) Exit"
     echo ""
     
-    read -p "Select option [1-6]: " choice
+    read -p "Select option [1-7]: " choice
     
     case $choice in
         1)
@@ -783,18 +903,24 @@ show_menu() {
             show_menu
             ;;
         4)
-            init_environment
+            fix_permissions
             echo ""
             read -p "Press Enter to continue..."
             show_menu
             ;;
         5)
-            create_aliases
+            init_environment
             echo ""
             read -p "Press Enter to continue..."
             show_menu
             ;;
         6)
+            create_aliases
+            echo ""
+            read -p "Press Enter to continue..."
+            show_menu
+            ;;
+        7)
             print_info "Goodbye!"
             exit 0
             ;;
