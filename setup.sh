@@ -907,6 +907,8 @@ init_environment() {
         echo -e "  ${GREEN}✓${NC} Fresh MySQL instance with new root password"
         echo -e "  ${GREEN}✓${NC} Clean environment ready for new sites"
         echo ""
+        print_warning "Note: Sudo password will be required to delete root-owned files"
+        echo ""
         print_error "THIS CANNOT BE UNDONE!"
         echo ""
         read -p "Do you want to continue? [y/N]: " confirm_continue
@@ -934,14 +936,10 @@ init_environment() {
         docker compose down
         print_success "Containers stopped"
         
-        # Remove all site directories
+        # Remove all site directories (use sudo because files may be owned by root)
         if [ -d "sites" ] && [ "$(ls -A sites)" ]; then
-            print_info "Removing all site directories..."
-            if [ -w "sites" ]; then
-                rm -rf sites/*
-            else
-                sudo rm -rf sites/*
-            fi
+            print_info "Removing all site directories (requires sudo for root-owned files)..."
+            sudo rm -rf sites/*
             print_success "Site directories removed"
         fi
         
