@@ -310,9 +310,9 @@ add_site() {
         echo "Choose a starter kit for your Laravel application:"
         echo ""
         echo "  1) Laravel only - No starter kit (blank Laravel)"
-        echo "  2) React - Modern SPA with React, Inertia & shadcn/ui"
-        echo "  3) Vue - Modern SPA with Vue, Inertia & shadcn-vue"
-        echo "  4) Livewire - Dynamic frontend with Livewire & Flux UI"
+        echo "  2) React - Authentication with React & Inertia (Breeze)"
+        echo "  3) Vue - Authentication with Vue & Inertia (Breeze)"
+        echo "  4) Livewire - Authentication with Livewire & Blade (Breeze)"
         echo ""
         echo "Learn more: https://laravel.com/docs/starter-kits"
         echo ""
@@ -414,18 +414,25 @@ EOF
     # Create Laravel project if requested
     if [ "$CREATE_LARAVEL" = true ]; then
         print_info "Creating new Laravel project..."
+        docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites && composer create-project laravel/laravel ${SITE_NAME}"
         
-        # Create Laravel project with or without starter kit
-        if [ "$STARTER_KIT" = "none" ]; then
-            print_info "Installing Laravel (without starter kit)..."
-            docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites && composer create-project laravel/laravel ${SITE_NAME}"
-        else
-            print_info "Installing Laravel with ${STARTER_KIT^} starter kit..."
-            docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites && composer create-project laravel/laravel ${SITE_NAME} '--starter-kit=${STARTER_KIT}'"
+        # Install starter kit if selected
+        if [ "$STARTER_KIT" != "none" ]; then
+            print_info "Installing ${STARTER_KIT^} starter kit..."
             
-            # Install and build frontend dependencies for starter kits
-            print_info "Installing and building frontend dependencies..."
-            docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && npm install && npm run build"
+            case $STARTER_KIT in
+                react|vue|livewire)
+                    # Install Laravel Breeze with the selected stack
+                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && composer require laravel/breeze --dev"
+                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && php artisan breeze:install ${STARTER_KIT}"
+                    
+                    # Install and build frontend dependencies
+                    print_info "Installing and building frontend dependencies..."
+                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && npm install && npm run build"
+                    ;;
+            esac
+            
+            print_success "${STARTER_KIT^} starter kit installed successfully"
         fi
         
         # Fix file permissions - set ownership to host user
