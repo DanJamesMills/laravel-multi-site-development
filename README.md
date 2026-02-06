@@ -48,7 +48,7 @@ A Docker-based development environment for running multiple Laravel applications
 - **Multiple PHP Versions**: Run PHP 8.1, 8.2, 8.3, and 8.4 simultaneously
 - **Multi-Site Support**: Host unlimited Laravel applications in one environment
 - **Isolated Databases**: Each site can have its own MySQL database and user
-- **Laravel Starter Kits**: Automatically install React, Vue, or Livewire starter kits (PHP 8.4 only)
+- **Laravel 12 Starter Kits**: React (TypeScript, shadcn/ui), Vue (TypeScript, shadcn-vue), or Livewire (Flux UI) - PHP 8.4 only
 - **Easy Site Management**: Interactive CLI tool to add, list, and remove sites
 - **Nginx Virtual Hosts**: Automatic nginx configuration per site
 - **Development Ready**: MySQL, Redis, and all PHP extensions pre-configured

@@ -350,12 +350,12 @@ add_site() {
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "Choose a starter kit for your Laravel application:"
             echo ""
-            echo "  1) Laravel only - No starter kit (blank Laravel)"
-            echo "  2) React - Authentication with React & Inertia (Breeze)"
-            echo "  3) Vue - Authentication with Vue & Inertia (Breeze)"
-            echo "  4) Livewire - Authentication with Livewire & Blade (Breeze)"
+            echo "  1) No starter kit - Blank Laravel application"
+            echo "  2) React - Modern SPA with React 19, TypeScript, Inertia, shadcn/ui"
+            echo "  3) Vue - Modern SPA with Vue 3, TypeScript, Inertia, shadcn-vue"
+            echo "  4) Livewire - Full-stack with Livewire 4, Blade, Flux UI"
             echo ""
-            echo "Learn more: https://laravel.com/docs/starter-kits"
+            echo "Learn more: https://laravel.com/docs/12.x/starter-kits"
             echo ""
             
             read -p "Select option [1-4]: " starter_choice
@@ -401,7 +401,8 @@ add_site() {
     fi
     if [ "$CREATE_LARAVEL" = true ]; then
         if [ "$STARTER_KIT" != "none" ]; then
-            echo "  Laravel:      New project with ${STARTER_KIT^} starter kit"
+            STARTER_KIT_DISPLAY="$(echo ${STARTER_KIT} | sed 's/.*/\u&/')"
+            echo "  Laravel:      New project with ${STARTER_KIT_DISPLAY} starter kit"
         else
             echo "  Laravel:      New project (no starter kit)"
         fi
@@ -458,26 +459,24 @@ EOF
     
     # Create Laravel project if requested
     if [ "$CREATE_LARAVEL" = true ]; then
-        print_info "Creating new Laravel project..."
-        docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites && composer create-project laravel/laravel ${SITE_NAME}"
+        print_info "Creating new Laravel 12 project..."
         
-        # Install starter kit if selected
+        # Remove existing directory if it exists
+        if [ -d "sites/${SITE_NAME}" ]; then
+            print_warning "Directory sites/${SITE_NAME} already exists, removing..."
+            sudo rm -rf "sites/${SITE_NAME}"
+        fi
+        
         if [ "$STARTER_KIT" != "none" ]; then
-            print_info "Installing ${STARTER_KIT^} starter kit..."
+            # Create Laravel project with starter kit (installer handles npm install & build)
+            STARTER_KIT_DISPLAY="$(echo ${STARTER_KIT} | sed 's/.*/\u&/')"
+            print_info "Installing Laravel with ${STARTER_KIT_DISPLAY} starter kit..."
+            docker compose run --rm php${PHP_VERSION} sh -c "composer global require laravel/installer && cd /var/www/sites && /root/.composer/vendor/bin/laravel new ${SITE_NAME} --${STARTER_KIT} --git"
             
-            case $STARTER_KIT in
-                react|vue|livewire)
-                    # Install Laravel Breeze with the selected stack
-                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && composer require laravel/breeze --dev"
-                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && php artisan breeze:install ${STARTER_KIT}"
-                    
-                    # Install and build frontend dependencies (use legacy-peer-deps for compatibility)
-                    print_info "Installing and building frontend dependencies..."
-                    docker compose run --rm php${PHP_VERSION} sh -c "cd /var/www/sites/${SITE_NAME} && npm install --legacy-peer-deps && npm run build"
-                    ;;
-            esac
-            
-            print_success "${STARTER_KIT^} starter kit installed successfully"
+            print_success "${STARTER_KIT_DISPLAY} starter kit installed successfully"
+        else
+            # Create blank Laravel project
+            docker compose run --rm php${PHP_VERSION} sh -c "composer global require laravel/installer && cd /var/www/sites && /root/.composer/vendor/bin/laravel new ${SITE_NAME} --git"
         fi
         
         # Fix file permissions - set ownership to current user on host
